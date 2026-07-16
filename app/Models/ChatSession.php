@@ -37,4 +37,15 @@ class ChatSession extends Model
             ->selectRaw('COALESCE(SUM(input_tokens + output_tokens + embed_tokens), 0) as total')
             ->value('total');
     }
+
+    /**
+     * Somma dei caratteri letti dal Text-to-Speech (motore OpenAI) in questa
+     * sessione. Contatore separato dai token dell'LLM.
+     */
+    public function totalTtsChars(): int
+    {
+        return (int) $this->messages()
+            ->selectRaw('COALESCE(SUM(tts_chars), 0) as total')
+            ->value('total');
+    }
 }

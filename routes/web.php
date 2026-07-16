@@ -16,6 +16,7 @@ Route::middleware('settings')->group(function (): void {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::post('/chat/stream', [ChatController::class, 'stream'])->name('chat.stream');
+    Route::post('/chat/tts', [ChatController::class, 'tts'])->name('chat.tts');
     Route::post('/chat/reset', [ChatController::class, 'reset'])->name('chat.reset');
 
     Route::get('/books', [BookController::class, 'index'])->name('books.index');

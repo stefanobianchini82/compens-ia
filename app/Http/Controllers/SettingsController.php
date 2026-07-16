@@ -17,8 +17,11 @@ class SettingsController extends Controller
     public function edit(Request $request): View
     {
         $sessionTokens = 0;
+        $ttsCharsSession = 0;
         if ($sessionId = $request->session()->get('chat_session_id')) {
-            $sessionTokens = ChatSession::find($sessionId)?->totalTokens() ?? 0;
+            $session = ChatSession::find($sessionId);
+            $sessionTokens = $session?->totalTokens() ?? 0;
+            $ttsCharsSession = $session?->totalTtsChars() ?? 0;
         }
 
         return view('settings', [
@@ -26,9 +29,14 @@ class SettingsController extends Controller
             'apiKeySet' => filled(Setting::get('api_key')),
             'chatModel' => Setting::get('chat_model'),
             'embedModel' => Setting::get('embed_model'),
+            'ttsEngine' => Setting::get('tts_engine', 'browser'),
+            'ttsVoice' => Setting::get('tts_voice'),
+            'ttsModel' => Setting::get('tts_model'),
             'needsSetup' => (bool) $request->session()->get('needs_setup', false),
             'totalTokens' => ChatMessage::grandTotalTokens(),
             'sessionTokens' => $sessionTokens,
+            'ttsCharsTotal' => ChatMessage::grandTotalTtsChars(),
+            'ttsCharsSession' => $ttsCharsSession,
         ]);
     }
 
@@ -39,6 +47,9 @@ class SettingsController extends Controller
             'api_key' => ['nullable', 'string', 'max:500'],
             'chat_model' => ['nullable', 'string', 'max:120'],
             'embed_model' => ['nullable', 'string', 'max:120'],
+            'tts_engine' => ['required', Rule::in(['browser', 'openai'])],
+            'tts_voice' => ['nullable', 'string', 'max:120'],
+            'tts_model' => ['nullable', 'string', 'max:120'],
         ]);
 
         Setting::put('provider', $validated['provider']);
@@ -51,6 +62,13 @@ class SettingsController extends Controller
 
         Setting::put('chat_model', $validated['chat_model'] ?? null);
         Setting::put('embed_model', $validated['embed_model'] ?? null);
+
+        // Lettura ad alta voce (Text-to-Speech). Il motore "browser" (Web Speech
+        // API) è gratuito e funziona con qualunque provider; "openai" usa il TTS
+        // di OpenAI (qualità superiore) ma richiede provider OpenAI.
+        Setting::put('tts_engine', $validated['tts_engine']);
+        Setting::put('tts_voice', $validated['tts_voice'] ?? null);
+        Setting::put('tts_model', $validated['tts_model'] ?? null);
 
         return redirect()
             ->route('settings.edit')

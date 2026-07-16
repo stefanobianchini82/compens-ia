@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\InteractsWithChatSession;
 use App\Models\Book;
+use App\Models\Setting;
 use App\Models\Subject;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -33,6 +34,10 @@ class DashboardController extends Controller
             'sessionTokens' => $chat->totalTokens(),
             'currentSubjectId' => $chat->subject_id,
             'hasReadyBooks' => Book::where('status', Book::STATUS_READY)->exists(),
+            // Motore di lettura ad alta voce scelto: "openai" solo se davvero
+            // usabile (provider OpenAI + key), altrimenti la voce del dispositivo.
+            'ttsEngine' => (Setting::get('tts_engine', 'browser') === 'openai'
+                && Setting::get('provider') === 'openai') ? 'openai' : 'browser',
         ]);
     }
 }

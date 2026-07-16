@@ -16,6 +16,7 @@
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { openConfirm, postReset } from './reset-modal';
+import { createTtsButton } from './tts';
 
 // A-capo singolo → <br>: in chat va reso, non ignorato come nel Markdown standard.
 marked.setOptions({ gfm: true, breaks: true });
@@ -36,10 +37,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const sessionTokensEl = document.getElementById('session-tokens');
     const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
+    // Configurazione della lettura ad alta voce (Text-to-Speech).
+    const ttsEngine = messages.dataset.ttsEngine || 'browser';
+    const ttsUrl = messages.dataset.ttsUrl || '';
+    const attachTts = (bubble, messageId) =>
+        createTtsButton(bubble, { engine: ttsEngine, ttsUrl, csrf, messageId });
+
     // Rende in Markdown i messaggi dell'assistente già presenti (storico caricato
-    // dal DB), che il server stampa come testo grezzo.
+    // dal DB), che il server stampa come testo grezzo, e aggiunge il pulsante ▶.
     messages.querySelectorAll('.chat-md').forEach((el) => {
         el.innerHTML = renderMarkdown(el.textContent);
+        attachTts(el, el.dataset.messageId || null);
     });
 
     // Invio invia il messaggio; Shift+Invio va a capo nella textarea.
@@ -221,6 +229,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (sessionTokensEl && typeof payload.sessionTokens === 'number') {
                             sessionTokensEl.textContent = payload.sessionTokens.toLocaleString('it-IT');
                         }
+                        // Risposta completa: aggiungiamo il pulsante di lettura ▶.
+                        attachTts(answer, payload.messageId ?? null);
                     } else if (event === 'error') {
                         answer.classList.remove('italic', 'text-slate-400');
                         answer.classList.add('text-red-600');

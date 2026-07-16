@@ -9,12 +9,14 @@
         {{-- Aggiungi materia --}}
         <section class="rounded-2xl bg-white border border-slate-200 p-5">
             <h2 class="text-xl font-bold mb-3">➕ Aggiungi una materia</h2>
-            <form action="{{ route('subjects.store') }}" method="POST" class="flex items-center gap-3">
+            <form action="{{ route('subjects.store') }}" method="POST" class="space-y-3">
                 @csrf
-                <input type="text" name="name" required maxlength="80" placeholder="Es. Storia"
-                       class="flex-1 rounded-xl border-2 border-slate-300 px-4 py-2 text-lg focus:border-sky-500 focus:outline-none">
-                <input type="color" name="color" value="#38bdf8" class="h-11 w-12 shrink-0 cursor-pointer rounded-lg border border-slate-300 p-1">
-                <button class="rounded-xl bg-slate-800 px-4 py-2 font-semibold text-white hover:bg-slate-700">Aggiungi</button>
+                <div class="flex items-center gap-3">
+                    <input type="text" name="name" required maxlength="80" placeholder="Es. Storia"
+                           class="flex-1 min-w-0 rounded-xl border-2 border-slate-300 px-4 py-2 text-lg focus:border-sky-500 focus:outline-none">
+                    <input type="color" name="color" value="#38bdf8" class="h-11 w-12 shrink-0 cursor-pointer rounded-lg border border-slate-300 p-1">
+                </div>
+                <button class="w-full rounded-xl bg-slate-800 px-4 py-2 font-semibold text-white hover:bg-slate-700">Aggiungi</button>
             </form>
             @error('name')<p class="text-red-600 mt-2">{{ $message }}</p>@enderror
         </section>

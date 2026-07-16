@@ -40,6 +40,22 @@
                 @error('api_key')<p class="text-red-600 mt-1">{{ $message }}</p>@enderror
             </div>
 
+            <div>
+                <label class="block font-semibold mb-1">🔊 Lettura ad alta voce</label>
+                <select name="tts_engine"
+                        class="w-full rounded-xl border-2 border-slate-300 px-4 py-2 text-lg focus:border-sky-500 focus:outline-none">
+                    <option value="browser" @selected($ttsEngine === 'browser')>Voce del dispositivo (gratis, sempre disponibile)</option>
+                    <option value="openai" @selected($ttsEngine === 'openai')>OpenAI (qualità superiore, richiede provider OpenAI)</option>
+                </select>
+                <p class="text-sm text-slate-500 mt-1">
+                    Aggiunge un pulsante ▶ per farti <strong>ascoltare</strong> le risposte.
+                    La voce del dispositivo non ha costi. La voce OpenAI è più naturale ma
+                    consuma caratteri (vedi contatore qui sotto) e funziona solo con provider OpenAI:
+                    con Gemini si usa comunque la voce del dispositivo.
+                </p>
+                @error('tts_engine')<p class="text-red-600 mt-1">{{ $message }}</p>@enderror
+            </div>
+
             <details class="rounded-xl bg-slate-50 p-4">
                 <summary class="cursor-pointer font-semibold">Modelli (facoltativo)</summary>
                 <div class="mt-3 space-y-3">
@@ -53,6 +69,18 @@
                         <label class="block text-sm font-semibold mb-1">Modello embeddings</label>
                         <input type="text" name="embed_model" value="{{ $embedModel }}"
                                placeholder="Predefinito in base al provider"
+                               class="w-full rounded-xl border-2 border-slate-300 px-4 py-2 focus:border-sky-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Voce OpenAI (TTS)</label>
+                        <input type="text" name="tts_voice" value="{{ $ttsVoice }}"
+                               placeholder="Predefinita: nova (es. alloy, echo, fable, onyx, shimmer)"
+                               class="w-full rounded-xl border-2 border-slate-300 px-4 py-2 focus:border-sky-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Modello TTS OpenAI</label>
+                        <input type="text" name="tts_model" value="{{ $ttsModel }}"
+                               placeholder="Predefinito: gpt-4o-mini-tts (es. tts-1, tts-1-hd)"
                                class="w-full rounded-xl border-2 border-slate-300 px-4 py-2 focus:border-sky-500 focus:outline-none">
                     </div>
                 </div>
@@ -77,6 +105,22 @@
                 <p class="text-slate-500">Token sessione corrente</p>
             </div>
         </div>
+
+        <h3 class="text-lg font-bold mt-6 mb-3">🔊 Lettura ad alta voce (caratteri)</h3>
+        <div class="grid grid-cols-2 gap-4">
+            <div class="rounded-xl bg-slate-50 p-4 text-center">
+                <p class="text-3xl font-bold text-emerald-700">{{ number_format($ttsCharsTotal, 0, ',', '.') }}</p>
+                <p class="text-slate-500">Caratteri letti totali</p>
+            </div>
+            <div class="rounded-xl bg-slate-50 p-4 text-center">
+                <p class="text-3xl font-bold text-emerald-700">{{ number_format($ttsCharsSession, 0, ',', '.') }}</p>
+                <p class="text-slate-500">Caratteri letti sessione corrente</p>
+            </div>
+        </div>
+        <p class="text-sm text-slate-500 mt-3">
+            Conteggio dei caratteri sintetizzati con la voce OpenAI (unità di fatturazione del TTS).
+            La voce del dispositivo non ha costi e non incrementa questi valori.
+        </p>
     </section>
 </div>
 @endsection

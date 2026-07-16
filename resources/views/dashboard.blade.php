@@ -35,10 +35,12 @@
         </div>
     @endunless
 
-    <div id="chat-messages" class="flex-1 overflow-y-auto space-y-4 rounded-2xl bg-slate-100 p-4">
+    <div id="chat-messages" data-tts-engine="{{ $ttsEngine }}" data-tts-url="{{ route('chat.tts') }}"
+         class="flex-1 overflow-y-auto space-y-4 rounded-2xl bg-slate-100 p-4">
         @forelse ($messages as $message)
             <div class="flex {{ $message->role === 'user' ? 'justify-end' : 'justify-start' }}">
-                <div class="{{ $message->role === 'user'
+                <div @if ($message->role !== 'user') data-message-id="{{ $message->id }}" @endif
+                     class="{{ $message->role === 'user'
                         ? 'bg-sky-600 text-white whitespace-pre-wrap'
                         : 'bg-white text-slate-800 border border-slate-200 chat-md' }}
                         max-w-[85%] rounded-2xl px-5 py-3 shadow-sm">{{ $message->content }}</div>

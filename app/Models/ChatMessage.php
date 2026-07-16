@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $input_tokens
  * @property int $output_tokens
  * @property int $embed_tokens
+ * @property int $tts_chars
  */
 class ChatMessage extends Model
 {
@@ -30,12 +31,14 @@ class ChatMessage extends Model
         'input_tokens',
         'output_tokens',
         'embed_tokens',
+        'tts_chars',
     ];
 
     protected $casts = [
         'input_tokens' => 'integer',
         'output_tokens' => 'integer',
         'embed_tokens' => 'integer',
+        'tts_chars' => 'integer',
     ];
 
     public function session(): BelongsTo
@@ -48,6 +51,17 @@ class ChatMessage extends Model
     {
         return (int) static::query()
             ->selectRaw('COALESCE(SUM(input_tokens + output_tokens + embed_tokens), 0) as total')
+            ->value('total');
+    }
+
+    /**
+     * Somma dei caratteri letti dal Text-to-Speech (motore OpenAI) nell'intera
+     * applicazione. Contatore separato dai token dell'LLM.
+     */
+    public static function grandTotalTtsChars(): int
+    {
+        return (int) static::query()
+            ->selectRaw('COALESCE(SUM(tts_chars), 0) as total')
             ->value('total');
     }
 }

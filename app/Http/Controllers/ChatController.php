@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\AI\PlainText;
 use App\AI\StudyAgentFactory;
+use App\AI\TextToSpeechFactory;
 use App\Http\Controllers\Concerns\InteractsWithChatSession;
 use App\Models\ChatMessage;
 use App\Models\ChatSession;
 use App\Models\Subject;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -16,14 +19,17 @@ use Illuminate\Http\StreamedEvent;
 use NeuronAI\Chat\History\ChatHistoryInterface;
 use NeuronAI\Chat\History\FileChatHistory;
 use NeuronAI\Chat\Messages\AssistantMessage;
+use NeuronAI\Chat\Messages\ContentBlocks\AudioContent;
 use NeuronAI\Chat\Messages\Stream\Chunks\TextChunk;
 use NeuronAI\Chat\Messages\ToolCallMessage;
 use NeuronAI\Chat\Messages\UserMessage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
+use function base64_decode;
 use function count;
 use function end;
+use function mb_strlen;
 
 class ChatController extends Controller
 {
@@ -75,7 +81,7 @@ class ChatController extends Controller
                 $usage = $message->getUsage();
                 $embedTokens = $agent->embeddingsProvider()->getTotalTokens() - $embedBefore;
 
-                $chat->messages()->create([
+                $assistantMessage = $chat->messages()->create([
                     'role' => ChatMessage::ROLE_ASSISTANT,
                     'content' => $message->getContent() ?? '',
                     'input_tokens' => $usage?->inputTokens ?? 0,
@@ -86,6 +92,8 @@ class ChatController extends Controller
                 yield new StreamedEvent('done', json_encode([
                     'sessionTokens' => $chat->totalTokens(),
                     'totalTokens' => ChatMessage::grandTotalTokens(),
+                    // Serve al client per richiedere il TTS server-side di questa risposta.
+                    'messageId' => $assistantMessage->id,
                 ]));
             } catch (Throwable $e) {
                 report($e);
@@ -100,6 +108,63 @@ class ChatController extends Controller
                 ]));
             }
         }, [], null);
+    }
+
+    /**
+     * Sintetizza ad alta voce (Text-to-Speech OpenAI) una risposta già salvata.
+     * Restituisce l'audio MP3 e conta i caratteri letti (contatore TTS separato
+     * dai token). Se il TTS server-side non è disponibile (motore "browser",
+     * provider Gemini o key mancante) risponde 422: il client ripiega sulla voce
+     * del dispositivo (Web Speech API).
+     */
+    public function tts(Request $request, TextToSpeechFactory $factory): Response|JsonResponse
+    {
+        $validated = $request->validate([
+            'message_id' => ['required', 'exists:chat_messages,id'],
+        ]);
+
+        if (! $factory->available()) {
+            return response()->json([
+                'message' => 'Lettura OpenAI non disponibile: uso la voce del dispositivo.',
+            ], 422);
+        }
+
+        $message = ChatMessage::findOrFail($validated['message_id']);
+
+        $plain = PlainText::fromMarkdown($message->content);
+        if ($plain === '') {
+            return response()->json(['message' => 'Niente da leggere.'], 422);
+        }
+
+        try {
+            $result = $factory->make()->chat(new UserMessage($plain));
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'Non riesco a generare l\'audio in questo momento.',
+            ], 422);
+        }
+
+        $base64 = null;
+        foreach ($result->getContentBlocks() as $block) {
+            if ($block instanceof AudioContent) {
+                $base64 = $block->getContent();
+                break;
+            }
+        }
+
+        if ($base64 === null) {
+            return response()->json(['message' => 'Audio non disponibile.'], 422);
+        }
+
+        // Conteggio separato dai token: caratteri effettivamente inviati al TTS.
+        $message->increment('tts_chars', mb_strlen($plain));
+
+        return response(base64_decode($base64), 200, [
+            'Content-Type' => 'audio/mpeg',
+            'Cache-Control' => 'no-store',
+        ]);
     }
 
     /**
