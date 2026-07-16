@@ -32,6 +32,14 @@ rilevanti insieme alle domande per generare le risposte.
 - 🔒 **Locale e senza login** — nessun account: file dei libri, chat e chiave API (cifrata nel database) restano sul tuo computer. L'unico servizio esterno è il provider LLM scelto, a cui vengono inviati il testo dei libri (per gli embeddings) e i passaggi rilevanti insieme alle domande.
 - 📊 **Consumo token** — statistiche sui token consumati, totali e per sessione di chat.
 
+## Screenshot
+
+<p>
+  <img src="screenshots/chat.jpg" alt="Chat di studio" width="32%">
+  <img src="screenshots/books.jpg" alt="Gestione libri" width="32%">
+  <img src="screenshots/settings.jpg" alt="Impostazioni" width="32%">
+</p>
+
 ## Come funziona (RAG per materia)
 
 1. Carichi un libro PDF e lo assegni a una materia.
