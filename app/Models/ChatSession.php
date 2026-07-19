@@ -15,10 +15,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $id
  * @property int|null $subject_id
  * @property string|null $title
+ * @property int $stt_tokens
  */
 class ChatSession extends Model
 {
-    protected $fillable = ['subject_id', 'title'];
+    protected $fillable = ['subject_id', 'title', 'stt_tokens'];
+
+    protected $casts = [
+        'stt_tokens' => 'integer',
+    ];
 
     public function subject(): BelongsTo
     {
@@ -46,6 +51,14 @@ class ChatSession extends Model
     {
         return (int) $this->messages()
             ->selectRaw('COALESCE(SUM(tts_chars), 0) as total')
+            ->value('total');
+    }
+
+    /** Token totali della dettatura vocale (STT) nell'intera applicazione. */
+    public static function grandTotalSttTokens(): int
+    {
+        return (int) static::query()
+            ->selectRaw('COALESCE(SUM(stt_tokens), 0) as total')
             ->value('total');
     }
 }

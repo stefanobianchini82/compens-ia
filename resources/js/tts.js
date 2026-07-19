@@ -37,6 +37,74 @@ if (supportsSpeech) {
 }
 
 /**
+ * Divide il testo di una bolla in parole, avvolgendo ciascuna in uno
+ * <span class="tts-word"> (per l'evidenziazione «karaoke» durante la lettura).
+ *
+ * Preserva la struttura del Markdown già reso (grassetto, elenchi, titoli) e
+ * salta i pulsanti/pannelli aggiunti alla bolla (lettura, mappa). Restituisce la
+ * stringa completa letta e la lista dei token con gli offset in quella stringa,
+ * così l'evento `onboundary` (che dà un `charIndex`) può risalire alla parola.
+ *
+ * @returns {{ text: string, tokens: Array<{span: HTMLElement, start: number, end: number}> }}
+ */
+const buildWordTokens = (bubble) => {
+    const tokens = [];
+    let text = '';
+
+    const walker = document.createTreeWalker(bubble, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+            // Salta il testo dentro i pulsanti e i pannelli aggiunti alla bolla.
+            let el = node.parentElement;
+            while (el && el !== bubble) {
+                if (
+                    el.tagName === 'BUTTON' ||
+                    el.classList.contains('mindmap-panel') ||
+                    el.classList.contains('mindmap-error')
+                ) {
+                    return NodeFilter.FILTER_REJECT;
+                }
+                el = el.parentElement;
+            }
+            return NodeFilter.FILTER_ACCEPT;
+        },
+    });
+
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) {
+        textNodes.push(node);
+    }
+
+    for (const textNode of textNodes) {
+        // Manteniamo anche i separatori (spazi), per non sfasare gli offset.
+        const parts = textNode.data.split(/(\s+)/);
+        const fragment = document.createDocumentFragment();
+
+        for (const part of parts) {
+            if (part === '') {
+                continue;
+            }
+            if (/^\s+$/.test(part)) {
+                fragment.appendChild(document.createTextNode(part));
+                text += part;
+                continue;
+            }
+            const span = document.createElement('span');
+            span.className = 'tts-word';
+            span.textContent = part;
+            const start = text.length;
+            text += part;
+            tokens.push({ span, start, end: text.length });
+            fragment.appendChild(span);
+        }
+
+        textNode.parentNode.replaceChild(fragment, textNode);
+    }
+
+    return { text, tokens };
+};
+
+/**
  * Crea e collega un pulsante Play/Pausa a una bolla dell'assistente.
  *
  * @param {HTMLElement} bubble  L'elemento bolla (contiene il testo renderizzato).
@@ -75,6 +143,17 @@ export const createTtsButton = (bubble, { engine, ttsUrl, csrf, messageId }) => 
     let state = 'idle'; // idle | loading | playing | paused
     let audio = null; // elemento <audio> (motore openai), con blob in cache
 
+    // Stato del karaoke (evidenziazione parola per parola, solo motore browser).
+    let karaoke = null; // { text, tokens } costruito una sola volta, poi in cache
+    let activeWord = null; // span attualmente evidenziato
+
+    const clearHighlight = () => {
+        if (activeWord) {
+            activeWord.classList.remove('tts-word--active');
+            activeWord = null;
+        }
+    };
+
     const setLabel = () => {
         const labels = {
             idle: '🔊 Ascolta',
@@ -91,6 +170,7 @@ export const createTtsButton = (bubble, { engine, ttsUrl, csrf, messageId }) => 
     };
 
     const toIdle = () => {
+        clearHighlight();
         state = 'idle';
         setLabel();
         if (activePlayer === controller) {
@@ -98,15 +178,46 @@ export const createTtsButton = (bubble, { engine, ttsUrl, csrf, messageId }) => 
         }
     };
 
+    // Evidenzia la parola che copre l'offset `charIndex` nella stringa letta.
+    const highlightAt = (charIndex) => {
+        if (!karaoke) {
+            return;
+        }
+        const token =
+            karaoke.tokens.find((t) => charIndex >= t.start && charIndex < t.end) ||
+            karaoke.tokens.find((t) => t.start >= charIndex);
+        if (!token || token.span === activeWord) {
+            return;
+        }
+        clearHighlight();
+        activeWord = token.span;
+        activeWord.classList.add('tts-word--active');
+        activeWord.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    };
+
     // --- Motore browser (Web Speech API) ---
     const browserPlay = () => {
-        const utterance = new SpeechSynthesisUtterance(text);
+        // Segmentiamo il testo in parole una sola volta (poi resta in cache).
+        if (!karaoke) {
+            karaoke = buildWordTokens(bubble);
+        }
+        const readText = karaoke.text.trim() !== '' ? karaoke.text : text;
+
+        const utterance = new SpeechSynthesisUtterance(readText);
         utterance.lang = 'it-IT';
         const voice = pickItalianVoice();
         if (voice) {
             utterance.voice = voice;
         }
         utterance.rate = 0.95; // leggermente più lento: più chiaro per la lettura DSA
+        // Karaoke: a ogni confine di parola evidenziamo quella corrente. Se il
+        // browser/voce non emette `onboundary`, la lettura procede senza highlight.
+        utterance.onboundary = (event) => {
+            if (event.name && event.name !== 'word') {
+                return;
+            }
+            highlightAt(event.charIndex ?? 0);
+        };
         utterance.onend = toIdle;
         utterance.onerror = toIdle;
         window.speechSynthesis.cancel(); // sicurezza: nessuna coda residua
@@ -131,6 +242,7 @@ export const createTtsButton = (bubble, { engine, ttsUrl, csrf, messageId }) => 
 
     const browserStop = () => {
         window.speechSynthesis.cancel();
+        clearHighlight();
     };
 
     // --- Motore OpenAI (audio scaricato dal server) ---

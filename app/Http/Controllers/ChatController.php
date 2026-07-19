@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\AI\PlainText;
+use App\AI\SpeechToTextFactory;
 use App\AI\StudyAgentFactory;
 use App\AI\TextToSpeechFactory;
 use App\Http\Controllers\Concerns\InteractsWithChatSession;
@@ -16,6 +17,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\StreamedEvent;
+use NeuronAI\Chat\Enums\SourceType;
 use NeuronAI\Chat\History\ChatHistoryInterface;
 use NeuronAI\Chat\History\FileChatHistory;
 use NeuronAI\Chat\Messages\AssistantMessage;
@@ -168,6 +170,70 @@ class ChatController extends Controller
     }
 
     /**
+     * Trascrive un breve audio dettato dall'utente (Speech-to-Text OpenAI) e
+     * restituisce il testo, che il client inserisce nella casella della domanda.
+     * Pensato per chi fatica a scrivere (disgrafia). Se l'STT server-side non è
+     * disponibile (provider Gemini o key mancante) risponde 422: il client
+     * ripiega, se può, sul riconoscimento vocale del browser.
+     */
+    public function stt(Request $request, SpeechToTextFactory $factory): JsonResponse
+    {
+        $request->validate([
+            'audio' => ['required', 'file', 'max:10240', // max ~10 MB
+                'mimetypes:audio/webm,audio/ogg,application/ogg,audio/mpeg,audio/mp4,'
+                    .'audio/wav,audio/x-wav,audio/mp3,video/webm,video/mp4'],
+        ]);
+
+        $chat = $this->currentChatSession($request);
+
+        if (! $factory->available()) {
+            return response()->json([
+                'message' => 'Dettatura non disponibile: uso il microfono del dispositivo, se supportato.',
+            ], 422);
+        }
+
+        // OpenAI riconosce il formato dall'ESTENSIONE del filename. Il file
+        // temporaneo di Laravel non ha estensione, così Guzzle invierebbe un nome
+        // senza estensione e la trascrizione fallirebbe ("Unrecognized file format").
+        // Copiamo l'audio su un percorso gemello con l'estensione corretta.
+        $file = $request->file('audio');
+        $allowed = ['webm', 'ogg', 'oga', 'mp3', 'mpga', 'mpeg', 'm4a', 'mp4', 'wav', 'flac'];
+        $ext = strtolower($file->getClientOriginalExtension());
+        if (! in_array($ext, $allowed, true)) {
+            $ext = 'webm';
+        }
+
+        $source = (string) $file->getRealPath();
+        $target = $source.'.'.$ext;
+        copy($source, $target);
+
+        try {
+            $message = new UserMessage(new AudioContent($target, SourceType::URL));
+            $result = $factory->make()->chat($message);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'message' => 'Non riesco a capire l\'audio in questo momento. Riprova.',
+            ], 422);
+        } finally {
+            @unlink($target);
+        }
+
+        // Conteggio separato dai token dell'LLM: token della trascrizione OpenAI,
+        // attribuiti alla sessione (lo STT non produce una chat_message).
+        $usage = $result->getUsage();
+        $sttTokens = ($usage?->inputTokens ?? 0) + ($usage?->outputTokens ?? 0);
+        if ($sttTokens > 0) {
+            $chat->increment('stt_tokens', $sttTokens);
+        }
+
+        return response()->json([
+            'text' => trim((string) $result->getContent()),
+        ]);
+    }
+
+    /**
      * Svuota la chat della sessione corrente (pulsante "Svuota chat" o cambio
      * materia via fetch). La sessione HTTP e l'id della ChatSession restano
      * invariati. Risponde 204 alle richieste AJAX, altrimenti torna in dashboard.
@@ -192,6 +258,11 @@ class ChatController extends Controller
     private function clearChatSession(ChatSession $chat): void
     {
         $chat->messages()->delete();
+
+        // Azzeriamo anche il contatore della dettatura (STT), attribuito alla
+        // sessione: coerente con i token dell'LLM, che calano perché le
+        // chat_messages vengono cancellate qui sopra.
+        $chat->update(['stt_tokens' => 0]);
 
         // Stessa chiave/directory di StudyAgentFactory::forChat + StudyAgent::chatHistory:
         // ricreiamo il FileChatHistory senza costruire l'agente (che richiederebbe

@@ -121,6 +121,22 @@
             Conteggio dei caratteri sintetizzati con la voce OpenAI (unità di fatturazione del TTS).
             La voce del dispositivo non ha costi e non incrementa questi valori.
         </p>
+
+        <h3 class="text-lg font-bold mt-6 mb-3">🎤 Dettatura vocale (token)</h3>
+        <div class="grid grid-cols-2 gap-4">
+            <div class="rounded-xl bg-slate-50 p-4 text-center">
+                <p class="text-3xl font-bold text-violet-700">{{ number_format($sttTokensTotal, 0, ',', '.') }}</p>
+                <p class="text-slate-500">Token dettatura totali</p>
+            </div>
+            <div class="rounded-xl bg-slate-50 p-4 text-center">
+                <p class="text-3xl font-bold text-violet-700">{{ number_format($sttTokensSession, 0, ',', '.') }}</p>
+                <p class="text-slate-500">Token dettatura sessione corrente</p>
+            </div>
+        </div>
+        <p class="text-sm text-slate-500 mt-3">
+            Conteggio dei token della trascrizione OpenAI (unità di fatturazione della dettatura).
+            Il microfono del dispositivo non ha costi e non incrementa questi valori.
+        </p>
     </section>
 </div>
 @endsection

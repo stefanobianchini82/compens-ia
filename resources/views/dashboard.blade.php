@@ -36,6 +36,7 @@
     @endunless
 
     <div id="chat-messages" data-tts-engine="{{ $ttsEngine }}" data-tts-url="{{ route('chat.tts') }}"
+         data-mindmap-url="{{ route('chat.mindmap') }}"
          class="flex-1 overflow-y-auto space-y-4 rounded-2xl bg-slate-100 p-4">
         @forelse ($messages as $message)
             <div class="flex {{ $message->role === 'user' ? 'justify-end' : 'justify-start' }}">
@@ -52,11 +53,16 @@
         @endforelse
     </div>
 
-    <form id="chat-form" action="{{ route('chat.stream') }}" method="POST" class="mt-4 flex items-end gap-3">
+    <form id="chat-form" action="{{ route('chat.stream') }}" method="POST" class="mt-4 flex items-end gap-3"
+          data-stt-url="{{ route('chat.stt') }}" data-stt-available="{{ $sttAvailable ? '1' : '0' }}">
         @csrf
         <textarea id="chat-input" name="message" rows="2" required
                   placeholder="Scrivi qui la tua domanda…"
                   class="flex-1 resize-none rounded-2xl border-2 border-slate-300 bg-white px-5 py-3 text-lg focus:border-sky-500 focus:outline-none"></textarea>
+        <button id="chat-mic" type="button" aria-label="Detta la domanda a voce"
+                class="shrink-0 rounded-2xl border-2 border-slate-300 bg-white px-5 py-3 text-lg font-bold text-slate-700 shadow hover:bg-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-50">
+            🎤
+        </button>
         <button id="chat-send" type="submit"
                 class="rounded-2xl bg-sky-600 px-6 py-3 text-lg font-bold text-white shadow hover:bg-sky-700 disabled:opacity-50">
             Invia

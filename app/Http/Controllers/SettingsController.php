@@ -18,10 +18,12 @@ class SettingsController extends Controller
     {
         $sessionTokens = 0;
         $ttsCharsSession = 0;
+        $sttTokensSession = 0;
         if ($sessionId = $request->session()->get('chat_session_id')) {
             $session = ChatSession::find($sessionId);
             $sessionTokens = $session?->totalTokens() ?? 0;
             $ttsCharsSession = $session?->totalTtsChars() ?? 0;
+            $sttTokensSession = $session?->stt_tokens ?? 0;
         }
 
         return view('settings', [
@@ -37,6 +39,8 @@ class SettingsController extends Controller
             'sessionTokens' => $sessionTokens,
             'ttsCharsTotal' => ChatMessage::grandTotalTtsChars(),
             'ttsCharsSession' => $ttsCharsSession,
+            'sttTokensTotal' => ChatSession::grandTotalSttTokens(),
+            'sttTokensSession' => $sttTokensSession,
         ]);
     }
 

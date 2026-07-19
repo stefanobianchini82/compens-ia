@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\AI\SpeechToTextFactory;
 use App\Http\Controllers\Concerns\InteractsWithChatSession;
 use App\Models\Book;
 use App\Models\Setting;
@@ -15,7 +16,7 @@ class DashboardController extends Controller
 {
     use InteractsWithChatSession;
 
-    public function index(Request $request): View
+    public function index(Request $request, SpeechToTextFactory $stt): View
     {
         $chat = $this->currentChatSession($request);
 
@@ -38,6 +39,9 @@ class DashboardController extends Controller
             // usabile (provider OpenAI + key), altrimenti la voce del dispositivo.
             'ttsEngine' => (Setting::get('tts_engine', 'browser') === 'openai'
                 && Setting::get('provider') === 'openai') ? 'openai' : 'browser',
+            // Dettatura vocale (Speech-to-Text) server-side disponibile solo con
+            // provider OpenAI: altrimenti il client prova il microfono del browser.
+            'sttAvailable' => $stt->available(),
         ]);
     }
 }

@@ -17,6 +17,8 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { openConfirm, postReset } from './reset-modal';
 import { createTtsButton } from './tts';
+import { createMindMapButton } from './mindmap';
+import { setupSpeechToText } from './stt';
 
 // A-capo singolo → <br>: in chat va reso, non ignorato come nel Markdown standard.
 marked.setOptions({ gfm: true, breaks: true });
@@ -34,8 +36,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const subjectSelect = document.getElementById('subject-select');
     const messages = document.getElementById('chat-messages');
     const sendButton = document.getElementById('chat-send');
+    const micButton = document.getElementById('chat-mic');
     const sessionTokensEl = document.getElementById('session-tokens');
     const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    // Input vocale (dettatura): riempie la casella della domanda parlando.
+    setupSpeechToText({ form, input, button: micButton, csrf });
 
     // Configurazione della lettura ad alta voce (Text-to-Speech).
     const ttsEngine = messages.dataset.ttsEngine || 'browser';
@@ -43,11 +49,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const attachTts = (bubble, messageId) =>
         createTtsButton(bubble, { engine: ttsEngine, ttsUrl, csrf, messageId });
 
+    // Configurazione delle mappe concettuali.
+    const mindmapUrl = messages.dataset.mindmapUrl || '';
+    const attachMindMap = (bubble, messageId) =>
+        createMindMapButton(bubble, { url: mindmapUrl, csrf, messageId });
+
+    // Aggiunge a una bolla dell'assistente i pulsanti di lettura ▶ e mappa 🗺️.
+    const attachTools = (bubble, messageId) => {
+        attachTts(bubble, messageId);
+        attachMindMap(bubble, messageId);
+    };
+
     // Rende in Markdown i messaggi dell'assistente già presenti (storico caricato
-    // dal DB), che il server stampa come testo grezzo, e aggiunge il pulsante ▶.
+    // dal DB), che il server stampa come testo grezzo, e aggiunge i pulsanti.
     messages.querySelectorAll('.chat-md').forEach((el) => {
         el.innerHTML = renderMarkdown(el.textContent);
-        attachTts(el, el.dataset.messageId || null);
+        attachTools(el, el.dataset.messageId || null);
     });
 
     // Invio invia il messaggio; Shift+Invio va a capo nella textarea.
@@ -229,8 +246,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (sessionTokensEl && typeof payload.sessionTokens === 'number') {
                             sessionTokensEl.textContent = payload.sessionTokens.toLocaleString('it-IT');
                         }
-                        // Risposta completa: aggiungiamo il pulsante di lettura ▶.
-                        attachTts(answer, payload.messageId ?? null);
+                        // Risposta completa: aggiungiamo i pulsanti (lettura ▶ e mappa 🗺️).
+                        attachTools(answer, payload.messageId ?? null);
                     } else if (event === 'error') {
                         answer.classList.remove('italic', 'text-slate-400');
                         answer.classList.add('text-red-600');

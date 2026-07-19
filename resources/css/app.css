@@ -11,17 +11,69 @@
         'Apple Color Emoji', 'Segoe UI Emoji';
 }
 
+/* Font ad alta leggibilità self-hosted (nessuna CDN: l'app è locale e in futuro
+   NativePHP/offline). Atkinson Hyperlegible e OpenDyslexic sono a licenza libera
+   e pensati per l'accessibilità di lettura. */
+@font-face {
+    font-family: 'Atkinson Hyperlegible';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('../fonts/atkinson-hyperlegible-400.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Atkinson Hyperlegible';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('../fonts/atkinson-hyperlegible-700.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'OpenDyslexic';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('../fonts/opendyslexic-400.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'OpenDyslexic';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('../fonts/opendyslexic-700.woff2') format('woff2');
+}
+
 /* Impostazioni di base pensate per la leggibilità: testo grande, righe
-   spaziate, interlinea generosa. */
+   spaziate, interlinea generosa. Le variabili --reading-* sono regolabili
+   dall'utente (pannello «Aa») e persistite in localStorage. */
 @layer base {
     html {
-        font-size: 18px;
+        font-size: calc(18px * var(--reading-scale, 1));
     }
 
     body {
-        line-height: 1.7;
-        letter-spacing: 0.01em;
+        font-family: var(--reading-font, var(--font-sans));
+        line-height: var(--reading-line, 1.7);
+        letter-spacing: var(--reading-letter, 0.01em);
     }
+}
+
+/* Righello di lettura: banda orizzontale che segue il cursore per aiutare a
+   tenere il segno sulla riga. Attivata dal pannello «Aa». */
+.reading-ruler {
+    position: fixed;
+    left: 0;
+    right: 0;
+    height: 2.4em;
+    z-index: 40;
+    pointer-events: none;
+    background: rgba(56, 189, 248, 0.18);
+    border-top: 2px solid rgba(2, 132, 199, 0.55);
+    border-bottom: 2px solid rgba(2, 132, 199, 0.55);
+    display: none;
+}
+.reading-ruler--on {
+    display: block;
 }
 
 /* Stile del Markdown renderizzato nelle bolle dell'assistente (`.chat-md`).
@@ -88,5 +140,29 @@
         padding-left: 0.9em;
         margin: 0.6em 0;
         color: var(--color-slate-600, #475569);
+    }
+
+    /* Pannello della mappa concettuale (Mermaid). Sfondo chiaro, scorrevole in
+       orizzontale se la mappa è larga, così non rompe mai il layout della bolla. */
+    .mindmap-panel {
+        overflow-x: auto;
+        max-width: 100%;
+        border: 2px solid var(--color-slate-200, #e2e8f0);
+        border-radius: 1rem;
+        background: var(--color-slate-50, #f8fafc);
+        padding: 0.75rem;
+    }
+
+    .mindmap-panel svg {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Parola evidenziata durante la lettura ad alta voce (karaoke reading). */
+    .chat-md .tts-word--active {
+        background: var(--color-amber-200, #fde68a);
+        color: var(--color-slate-900, #0f172a);
+        border-radius: 0.25em;
+        box-shadow: 0 0 0 2px var(--color-amber-200, #fde68a);
     }
 }

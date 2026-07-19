@@ -28,6 +28,10 @@
                        class="{{ $nav }} {{ request()->routeIs('settings.*') ? 'bg-sky-100 text-sky-800' : 'text-slate-600 hover:bg-slate-100' }}">
                         ⚙️ Impostazioni
                     </a>
+                    <button type="button" id="reading-prefs-btn" aria-label="Preferenze di lettura"
+                            class="inline-flex items-center justify-center rounded-xl border-2 border-slate-300 bg-white w-11 h-11 text-lg font-bold text-slate-700 hover:bg-slate-100 focus:border-sky-500 focus:outline-none">
+                        Aa
+                    </button>
                 </nav>
             </div>
         </header>
