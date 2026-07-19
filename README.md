@@ -28,9 +28,13 @@ rilevanti insieme alle domande per generare le risposte.
 - 📚 **Libri per materia** — carica i PDF dei libri scolastici e organizzali per materia.
 - 💬 **Chat sui tuoi libri** — fai domande e ricevi risposte basate solo sul materiale caricato, mai inventate.
 - 🧠 **Pensata per i DSA** — frasi brevi, parole semplici, tono paziente. UI ad alto contrasto, font ampio, spaziatura generosa, pulsanti grandi, nessuna distrazione.
+- 🔊 **Lettura ad alta voce** — un pulsante legge le risposte con la voce del dispositivo (gratis) o con la voce OpenAI (più naturale, a consumo), evidenziando le parole man mano (effetto karaoke).
+- 🎤 **Dettatura vocale** — detta la domanda invece di scriverla (utile in caso di disgrafia): trascrizione OpenAI, con ripiego sul microfono del browser.
+- 🗺️ **Mappe concettuali** — trasforma una risposta in una mappa concettuale (Mermaid) per vedere concetti e collegamenti a colpo d'occhio.
+- 🔤 **Aiuti alla lettura** — pannello «Aa» per scegliere font ad alta leggibilità (Atkinson Hyperlegible, OpenDyslexic), dimensione del testo, spaziatura di righe e lettere, e un righello di lettura. Le preferenze restano salvate sul dispositivo.
 - ⚡ **Risposte in streaming** — il testo compare progressivamente (SSE), come una conversazione reale.
 - 🔒 **Locale e senza login** — nessun account: file dei libri, chat e chiave API (cifrata nel database) restano sul tuo computer. L'unico servizio esterno è il provider LLM scelto, a cui vengono inviati il testo dei libri (per gli embeddings) e i passaggi rilevanti insieme alle domande.
-- 📊 **Consumo token** — statistiche sui token consumati, totali e per sessione di chat.
+- 📊 **Consumo** — statistiche sui token della chat (totali e per sessione), più contatori separati per i caratteri letti dal TTS OpenAI e per i token della dettatura STT.
 
 ## Screenshot
 
@@ -50,8 +54,10 @@ rilevanti insieme alle domande per generare le risposte.
 ## Stack tecnologico
 
 - **Laravel 12** · PHP 8.2+ (sviluppato su 8.4)
-- **[NeuronAI](https://github.com/neuron-core/neuron-ai)** (`neuron-core/neuron-ai ^3`) — RAG, provider LLM, streaming, vector store
+- **[NeuronAI](https://github.com/neuron-core/neuron-ai)** (`neuron-core/neuron-ai ^3`) — RAG, provider LLM, streaming, vector store, provider audio TTS/STT (solo OpenAI)
 - **Tailwind CSS 4** (via Vite) · Vanilla JS per la chat SSE (`marked` + `dompurify` per il rendering markdown)
+- **Mermaid** — mappe concettuali disegnate nel browser, caricato con import dinamico (code-split, solo al primo utilizzo)
+- **Font ad alta leggibilità self-hosted** — Atkinson Hyperlegible e OpenDyslexic (`.woff2`), per gli aiuti alla lettura
 - **SQLite** — usato anche per code (`queue`) e cache
 - **Vector store su file** — `FileVectorStore`, uno per materia
 - **poppler** (`pdftotext`) — estrazione del testo dai PDF
@@ -134,7 +140,7 @@ npm run dev              # asset frontend (in sviluppo)
 ## Primo utilizzo
 
 1. Apri l'app nel browser (di default `http://localhost:8000`).
-2. Vai in **Impostazioni** e inserisci provider (OpenAI o Gemini), chiave API e modelli.
+2. Vai in **Impostazioni** e inserisci provider (OpenAI o Gemini), chiave API e modelli. Qui scegli anche il motore di lettura ad alta voce (voce del dispositivo o OpenAI) e trovi i contatori d'uso (token, caratteri TTS, token STT).
 3. Crea una o più **materie**.
 4. **Carica i libri** PDF e attendi che passino allo stato *pronto* (`ready`).
 5. Seleziona una materia e inizia a **studiare in chat**.
@@ -161,12 +167,16 @@ Altri componenti chiave:
 | `settings` | coppie key/value: `provider`, `api_key` (cifrata), `chat_model`, `embed_model` |
 | `subjects` | materie: `name`, `slug`, `color` |
 | `books` | `subject_id`, `title`, `path`, `status`, `chunk_count`, `embed_tokens`, `error_message` |
-| `chat_sessions` | `subject_id`, `title` (chiave `FileChatHistory` = `session-{id}`) |
-| `chat_messages` | `role`, `content`, `input_tokens`, `output_tokens`, `embed_tokens` |
+| `chat_sessions` | `subject_id`, `title`, `stt_tokens` (chiave `FileChatHistory` = `session-{id}`) |
+| `chat_messages` | `role`, `content`, `input_tokens`, `output_tokens`, `embed_tokens`, `tts_chars` |
 
 **Statistiche token:** i totali sono la somma su tutte le `chat_messages`; la "sessione
 corrente" è filtrata sulla `chat_session` attiva. I token di chat provengono da
 `response->getUsage()`, quelli di embedding dai `Counting*EmbeddingsProvider`.
+
+I caratteri letti dal TTS OpenAI (`tts_chars`) e i token della dettatura STT (`stt_tokens`)
+sono **contatori distinti**: non confluiscono nel totale dei token dell'LLM e si azzerano
+quando si svuota la chat.
 
 ## Roadmap
 
