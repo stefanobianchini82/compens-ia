@@ -27,6 +27,7 @@ return [
     'tts_browser' => 'Device voice (free, always available)',
     'tts_openai' => 'OpenAI (higher quality, requires OpenAI provider)',
     'tts_note' => 'Adds a ▶ button so you can <strong>listen</strong> to the answers. The device voice is free. The OpenAI voice sounds more natural but consumes characters (see the counter below) and only works with the OpenAI provider: with Gemini the device voice is used instead.',
+    'tts_karaoke_note' => '✏️ Word-by-word highlighting while reading (the “karaoke” effect) is available <strong>only with the device voice</strong>: with the OpenAI voice you hear the audio without highlighting.',
 
     'models_summary' => 'Models (optional)',
     'chat_model_label' => 'Chat model',

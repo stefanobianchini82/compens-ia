@@ -59,6 +59,9 @@
                 <p class="text-sm text-slate-500 mt-1">
                     {!! __('settings.tts_note') !!}
                 </p>
+                <p class="text-sm text-slate-500 mt-1">
+                    {!! __('settings.tts_karaoke_note') !!}
+                </p>
                 @error('tts_engine')<p class="text-red-600 mt-1">{{ $message }}</p>@enderror
             </div>
 

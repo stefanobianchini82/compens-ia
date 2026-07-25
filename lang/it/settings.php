@@ -27,6 +27,7 @@ return [
     'tts_browser' => 'Voce del dispositivo (gratis, sempre disponibile)',
     'tts_openai' => 'OpenAI (qualità superiore, richiede provider OpenAI)',
     'tts_note' => 'Aggiunge un pulsante ▶ per farti <strong>ascoltare</strong> le risposte. La voce del dispositivo non ha costi. La voce OpenAI è più naturale ma consuma caratteri (vedi contatore qui sotto) e funziona solo con provider OpenAI: con Gemini si usa comunque la voce del dispositivo.',
+    'tts_karaoke_note' => '✏️ L\'evidenziazione parola per parola durante la lettura (effetto «karaoke») è disponibile <strong>solo con la voce del dispositivo</strong>: con la voce OpenAI si ascolta l\'audio senza evidenziazione.',
 
     'models_summary' => 'Modelli (facoltativo)',
     'chat_model_label' => 'Modello chat',
