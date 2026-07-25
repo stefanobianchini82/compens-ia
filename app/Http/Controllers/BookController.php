@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\AI\SafeFileVectorStore;
 use App\Jobs\IngestBookJob;
 use App\Models\Book;
 use App\Models\Subject;
@@ -44,7 +45,7 @@ class BookController extends Controller
 
         IngestBookJob::dispatch($book->id);
 
-        return back()->with('status', 'Libro caricato: lo sto preparando per lo studio.');
+        return back()->with('status', __('messages.book_uploaded'));
     }
 
     /** Stato di indicizzazione del libro (per il polling della UI). */
@@ -60,9 +61,20 @@ class BookController extends Controller
 
     public function destroy(Book $book): RedirectResponse
     {
+        $book->loadMissing('subject');
+
+        // Il PDF sparisce dal disco, ma i suoi vettori resterebbero nell'indice
+        // della materia: senza questa pulizia la chat continuerebbe a rispondere
+        // usando un libro che l'utente ha eliminato. La chiave è il percorso
+        // assoluto del file, lo stesso con cui IngestBookJob l'ha indicizzato.
+        if ($book->subject !== null) {
+            (new SafeFileVectorStore(storage_path('app/vector'), name: $book->subject->slug))
+                ->deleteBy('files', Storage::disk('local')->path($book->path));
+        }
+
         Storage::disk('local')->delete($book->path);
         $book->delete();
 
-        return back()->with('status', 'Libro eliminato.');
+        return back()->with('status', __('messages.book_deleted'));
     }
 }

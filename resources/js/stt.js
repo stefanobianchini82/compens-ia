@@ -11,6 +11,8 @@
  * manuale, così il ragazzo può rileggere prima di mandare.
  */
 
+import { t, speechLang } from './i18n';
+
 const SpeechRecognition =
     typeof window !== 'undefined' ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
 
@@ -78,7 +80,10 @@ export const setupSpeechToText = ({ form, input, button, csrf }) => {
         button.disabled = busy;
         button.classList.toggle('bg-red-100', recording);
         button.classList.toggle('border-red-400', recording);
-        button.setAttribute('aria-label', recording ? 'Ferma la dettatura' : 'Detta la domanda a voce');
+        button.setAttribute(
+            'aria-label',
+            recording ? t('stt_stop_aria', 'Ferma la dettatura') : t('stt_start_aria', 'Detta la domanda a voce'),
+        );
     };
 
     const showError = (message) => {
@@ -89,7 +94,7 @@ export const setupSpeechToText = ({ form, input, button, csrf }) => {
             note.className = 'stt-error mt-1 text-base text-red-600 basis-full';
             form.appendChild(note);
         }
-        note.textContent = message || 'Non riesco a usare il microfono.';
+        note.textContent = message || t('stt_mic_error', 'Non riesco a usare il microfono.');
         setTimeout(() => note?.remove(), 5000);
     };
 
@@ -142,7 +147,7 @@ export const setupSpeechToText = ({ form, input, button, csrf }) => {
                 recorder.start();
                 setState('⏹️', { recording: true });
             } catch (_) {
-                showError('Non riesco ad accedere al microfono.');
+                showError(t('stt_mic_access_error', 'Non riesco ad accedere al microfono.'));
             }
         };
 
@@ -158,7 +163,7 @@ export const setupSpeechToText = ({ form, input, button, csrf }) => {
 
     // --- Modalità browser (Web Speech API) ---
     const recognition = new SpeechRecognition();
-    recognition.lang = 'it-IT';
+    recognition.lang = speechLang();
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     let listening = false;
@@ -167,7 +172,7 @@ export const setupSpeechToText = ({ form, input, button, csrf }) => {
         const transcript = event.results?.[0]?.[0]?.transcript ?? '';
         appendToInput(input, transcript.trim());
     };
-    recognition.onerror = () => showError('Non ho capito. Riprova.');
+    recognition.onerror = () => showError(t('stt_not_understood', 'Non ho capito. Riprova.'));
     recognition.onend = () => {
         listening = false;
         setState('🎤');

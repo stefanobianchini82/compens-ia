@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\AI\PopplerBinary;
+use App\AI\SafeFileVectorStore;
 use App\AI\StudyAgentFactory;
 use App\Models\Book;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -55,15 +56,17 @@ class IngestBookJob implements ShouldQueue
                 ->getDocuments();
 
             if ($documents === []) {
-                throw new \RuntimeException(
-                    'Non sono riuscito a leggere il testo dal PDF. '
-                    .'Assicurati che sia un PDF con testo (non solo immagini scansionate) '
-                    .'e che poppler (pdftotext) sia installato o raggiungibile '
-                    .'(via PATH di sistema o variabile POPPLER_BIN_PATH).'
-                );
+                throw new \RuntimeException(__('messages.pdf_no_text'));
             }
 
             $agent = $factory->forIngestion($book->subject);
+
+            // Ri-ingestione dello stesso libro: senza questa pulizia i vettori si
+            // sommerebbero a quelli del giro precedente, e il retrieval restituirebbe
+            // lo stesso passaggio più volte.
+            (new SafeFileVectorStore(storage_path('app/vector'), name: $book->subject->slug))
+                ->deleteBy('files', $absolutePath);
+
             $agent->addDocuments($documents);
 
             $book->update([

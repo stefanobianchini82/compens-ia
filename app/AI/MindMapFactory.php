@@ -43,7 +43,7 @@ class MindMapFactory
     public function make(): AIProviderInterface
     {
         if (! $this->available()) {
-            throw new RuntimeException('Provider o API key non configurati: impossibile generare la mappa.');
+            throw new RuntimeException(__('messages.mindmap_provider_missing'));
         }
 
         $provider = (string) Setting::get('provider');

@@ -23,7 +23,7 @@ class SubjectController extends Controller
             'color' => $validated['color'] ?? '#38bdf8',
         ]);
 
-        return back()->with('status', 'Materia aggiunta.');
+        return back()->with('status', __('messages.subject_added'));
     }
 
     public function destroy(Subject $subject): RedirectResponse
@@ -40,6 +40,6 @@ class SubjectController extends Controller
 
         $subject->delete();
 
-        return back()->with('status', 'Materia eliminata.');
+        return back()->with('status', __('messages.subject_deleted'));
     }
 }

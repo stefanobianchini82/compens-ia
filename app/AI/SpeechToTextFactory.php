@@ -34,20 +34,21 @@ class SpeechToTextFactory
     }
 
     /**
-     * Istanzia il provider Speech-to-Text di OpenAI, in italiano.
+     * Istanzia il provider Speech-to-Text di OpenAI, nella lingua dell'interfaccia.
      *
      * @throws RuntimeException se l'STT server-side non è disponibile.
      */
     public function make(): OpenAISpeechToText
     {
         if (! $this->available()) {
-            throw new RuntimeException('Speech-to-Text OpenAI non disponibile con le impostazioni correnti.');
+            throw new RuntimeException(__('messages.stt_provider_missing'));
         }
 
         return new OpenAISpeechToText(
             key: (string) Setting::get('api_key'),
             model: Setting::get('stt_model') ?: self::DEFAULT_MODEL,
-            language: 'it',
+            // Lingua di trascrizione allineata a quella scelta dall'utente.
+            language: app()->getLocale(),
         );
     }
 }

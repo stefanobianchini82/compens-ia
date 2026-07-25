@@ -14,6 +14,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'settings' => \App\Http\Middleware\EnsureSettingsConfigured::class,
         ]);
+
+        // Applica la lingua scelta dall'utente su tutte le richieste web
+        // (anche su /settings, fuori dal gruppo middleware 'settings').
+        $middleware->web(append: [
+            \App\Http\Middleware\SetLocale::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

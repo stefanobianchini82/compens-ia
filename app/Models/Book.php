@@ -48,14 +48,14 @@ class Book extends Model
         return $this->belongsTo(Subject::class);
     }
 
-    /** Etichetta leggibile dello stato, per la UI. */
+    /** Etichetta leggibile dello stato, per la UI (tradotta secondo il locale). */
     public function statusLabel(): string
     {
         return match ($this->status) {
-            self::STATUS_PENDING => 'In coda',
-            self::STATUS_PROCESSING => 'In lavorazione',
-            self::STATUS_READY => 'Pronto',
-            self::STATUS_FAILED => 'Errore',
+            self::STATUS_PENDING => __('books.status.pending'),
+            self::STATUS_PROCESSING => __('books.status.processing'),
+            self::STATUS_READY => __('books.status.ready'),
+            self::STATUS_FAILED => __('books.status.failed'),
             default => $this->status,
         };
     }

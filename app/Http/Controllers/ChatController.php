@@ -105,8 +105,7 @@ class ChatController extends Controller
                 $this->repairHistory($agent->getChatHistory());
 
                 yield new StreamedEvent('error', json_encode([
-                    'message' => 'Ops! Qualcosa non ha funzionato. Controlla le impostazioni '
-                        .'(provider e API key) e riprova.',
+                    'message' => __('messages.chat_error'),
                 ]));
             }
         }, [], null);
@@ -127,7 +126,7 @@ class ChatController extends Controller
 
         if (! $factory->available()) {
             return response()->json([
-                'message' => 'Lettura OpenAI non disponibile: uso la voce del dispositivo.',
+                'message' => __('messages.tts_unavailable'),
             ], 422);
         }
 
@@ -135,7 +134,7 @@ class ChatController extends Controller
 
         $plain = PlainText::fromMarkdown($message->content);
         if ($plain === '') {
-            return response()->json(['message' => 'Niente da leggere.'], 422);
+            return response()->json(['message' => __('messages.tts_nothing')], 422);
         }
 
         try {
@@ -144,7 +143,7 @@ class ChatController extends Controller
             report($e);
 
             return response()->json([
-                'message' => 'Non riesco a generare l\'audio in questo momento.',
+                'message' => __('messages.tts_failed'),
             ], 422);
         }
 
@@ -157,7 +156,7 @@ class ChatController extends Controller
         }
 
         if ($base64 === null) {
-            return response()->json(['message' => 'Audio non disponibile.'], 422);
+            return response()->json(['message' => __('messages.tts_no_audio')], 422);
         }
 
         // Conteggio separato dai token: caratteri effettivamente inviati al TTS.
@@ -188,7 +187,7 @@ class ChatController extends Controller
 
         if (! $factory->available()) {
             return response()->json([
-                'message' => 'Dettatura non disponibile: uso il microfono del dispositivo, se supportato.',
+                'message' => __('messages.stt_unavailable'),
             ], 422);
         }
 
@@ -214,7 +213,7 @@ class ChatController extends Controller
             report($e);
 
             return response()->json([
-                'message' => 'Non riesco a capire l\'audio in questo momento. Riprova.',
+                'message' => __('messages.stt_failed'),
             ], 422);
         } finally {
             @unlink($target);
@@ -248,7 +247,7 @@ class ChatController extends Controller
             return response()->noContent();
         }
 
-        return redirect()->route('dashboard')->with('status', 'Chat svuotata.');
+        return redirect()->route('dashboard')->with('status', __('messages.chat_cleared'));
     }
 
     /**

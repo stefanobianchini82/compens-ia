@@ -16,24 +16,30 @@
  * quella eventualmente in corso.
  */
 
+import { t, speechLang } from './i18n';
+
 const supportsSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
 // Controller attualmente in riproduzione (per garantire un solo audio alla volta).
 let activePlayer = null;
 
-/** Sceglie una voce italiana tra quelle disponibili nel browser, se c'è. */
-const pickItalianVoice = () => {
+// Prefisso di lingua (es. 'it', 'en') ricavato dal locale vocale corrente.
+const voicePrefix = () => speechLang().slice(0, 2).toLowerCase();
+
+/** Sceglie una voce del browser nella lingua corrente, se disponibile. */
+const pickVoice = () => {
     if (!supportsSpeech) {
         return null;
     }
+    const prefix = voicePrefix();
     const voices = window.speechSynthesis.getVoices();
-    return voices.find((v) => v.lang && v.lang.toLowerCase().startsWith('it')) || null;
+    return voices.find((v) => v.lang && v.lang.toLowerCase().startsWith(prefix)) || null;
 };
 
 // Le voci possono caricarsi in modo asincrono: forziamo un primo popolamento.
 if (supportsSpeech) {
     window.speechSynthesis.getVoices();
-    window.speechSynthesis.addEventListener?.('voiceschanged', () => pickItalianVoice());
+    window.speechSynthesis.addEventListener?.('voiceschanged', () => pickVoice());
 }
 
 /**
@@ -156,15 +162,17 @@ export const createTtsButton = (bubble, { engine, ttsUrl, csrf, messageId }) => 
 
     const setLabel = () => {
         const labels = {
-            idle: '🔊 Ascolta',
-            loading: '⏳ Preparo…',
-            playing: '⏸️ Pausa',
-            paused: '▶️ Riprendi',
+            idle: t('tts_listen', '🔊 Ascolta'),
+            loading: t('tts_preparing', '⏳ Preparo…'),
+            playing: t('tts_pause', '⏸️ Pausa'),
+            paused: t('tts_resume', '▶️ Riprendi'),
         };
         button.textContent = labels[state];
         button.setAttribute(
             'aria-label',
-            state === 'playing' ? 'Metti in pausa la lettura' : 'Ascolta la risposta',
+            state === 'playing'
+                ? t('tts_pause_aria', 'Metti in pausa la lettura')
+                : t('tts_listen_aria', 'Ascolta la risposta'),
         );
         button.disabled = state === 'loading';
     };
@@ -204,8 +212,8 @@ export const createTtsButton = (bubble, { engine, ttsUrl, csrf, messageId }) => 
         const readText = karaoke.text.trim() !== '' ? karaoke.text : text;
 
         const utterance = new SpeechSynthesisUtterance(readText);
-        utterance.lang = 'it-IT';
-        const voice = pickItalianVoice();
+        utterance.lang = speechLang();
+        const voice = pickVoice();
         if (voice) {
             utterance.voice = voice;
         }

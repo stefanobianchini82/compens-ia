@@ -34,7 +34,7 @@ class MindMapController extends Controller
 
         if (! $factory->available()) {
             return response()->json([
-                'message' => 'Mappa non disponibile: controlla provider e API key nelle impostazioni.',
+                'message' => __('messages.mindmap_unavailable'),
             ], 422);
         }
 
@@ -43,7 +43,7 @@ class MindMapController extends Controller
         // Diamo al modello il testo pulito dal Markdown: bastano i concetti.
         $plain = PlainText::fromMarkdown($message->content);
         if ($plain === '') {
-            return response()->json(['message' => 'Non c\'è testo da trasformare in mappa.'], 422);
+            return response()->json(['message' => __('messages.mindmap_no_text')], 422);
         }
 
         try {
@@ -54,13 +54,13 @@ class MindMapController extends Controller
             report($e);
 
             return response()->json([
-                'message' => 'Non riesco a creare la mappa in questo momento. Riprova tra poco.',
+                'message' => __('messages.mindmap_failed'),
             ], 422);
         }
 
         $mermaid = $this->normalizeMermaid((string) $result->getContent());
         if ($mermaid === '') {
-            return response()->json(['message' => 'Mappa non disponibile per questa risposta.'], 422);
+            return response()->json(['message' => __('messages.mindmap_empty')], 422);
         }
 
         return response()->json(['mermaid' => $mermaid]);

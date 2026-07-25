@@ -51,9 +51,7 @@ class StudyAgentFactory
         $apiKey = Setting::get('api_key');
 
         if (blank($provider) || blank($apiKey)) {
-            throw new RuntimeException(
-                'Provider LLM o API key mancanti: configura le impostazioni prima di usare l\'assistente.'
-            );
+            throw new RuntimeException(__('messages.provider_missing'));
         }
 
         $provider = in_array($provider, ['openai', 'gemini'], true) ? $provider : 'openai';

@@ -19,6 +19,7 @@ import { openConfirm, postReset } from './reset-modal';
 import { createTtsButton } from './tts';
 import { createMindMapButton } from './mindmap';
 import { setupSpeechToText } from './stt';
+import { t, appLocale } from './i18n';
 
 // A-capo singolo → <br>: in chat va reso, non ignorato come nel Markdown standard.
 marked.setOptions({ gfm: true, breaks: true });
@@ -95,9 +96,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         openConfirm({
-            title: 'Cambiare materia?',
-            message: 'Cambiando materia la chat attuale verrà svuotata.',
-            confirmLabel: 'Cambia e svuota',
+            title: t('change_subject_title', 'Cambiare materia?'),
+            message: t('change_subject_body', 'Cambiando materia la chat attuale verrà svuotata.'),
+            confirmLabel: t('change_subject_confirm', 'Cambia e svuota'),
             onConfirm: async () => {
                 await postReset();
                 restoreEmptyChat();
@@ -117,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const restoreEmptyChat = () => {
         messages.innerHTML =
             '<div id="chat-empty" class="h-full flex items-center justify-center text-center text-slate-500">' +
-            '<p>Ciao! 👋 Scegli una materia e scrivimi la tua domanda.<br>Ti aiuto a capire, un passo alla volta.</p>' +
+            t('welcome', '<p>Ciao! 👋 Scegli una materia e scrivimi la tua domanda.<br>Ti aiuto a capire, un passo alla volta.</p>') +
             '</div>';
         if (sessionTokensEl) {
             sessionTokensEl.textContent = '0';
@@ -176,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         if (!subjectId) {
-            alert('Scegli prima una materia 📚');
+            alert(t('choose_subject_first', 'Scegli prima una materia 📚'));
             return;
         }
 
@@ -187,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const answer = addBubble('assistant', '');
         answer.classList.add('italic', 'text-slate-400');
-        answer.textContent = 'Sto pensando…';
+        answer.textContent = t('thinking', 'Sto pensando…');
         let firstChunk = true;
         let raw = ''; // testo Markdown accumulato della risposta
 
@@ -203,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!response.ok || !response.body) {
-                throw new Error('Risposta non valida dal server.');
+                throw new Error(t('invalid_response', 'Risposta non valida dal server.'));
             }
 
             const reader = response.body.getReader();
@@ -244,21 +245,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         scrollToBottom();
                     } else if (event === 'done') {
                         if (sessionTokensEl && typeof payload.sessionTokens === 'number') {
-                            sessionTokensEl.textContent = payload.sessionTokens.toLocaleString('it-IT');
+                            sessionTokensEl.textContent = payload.sessionTokens.toLocaleString(appLocale);
                         }
                         // Risposta completa: aggiungiamo i pulsanti (lettura ▶ e mappa 🗺️).
                         attachTools(answer, payload.messageId ?? null);
                     } else if (event === 'error') {
                         answer.classList.remove('italic', 'text-slate-400');
                         answer.classList.add('text-red-600');
-                        answer.textContent = payload.message || 'Si è verificato un errore.';
+                        answer.textContent = payload.message || t('generic_error', 'Si è verificato un errore.');
                     }
                 }
             }
         } catch (err) {
             answer.classList.remove('italic', 'text-slate-400');
             answer.classList.add('text-red-600');
-            answer.textContent = 'Non riesco a rispondere in questo momento. Riprova tra poco.';
+            answer.textContent = t('cannot_answer', 'Non riesco a rispondere in questo momento. Riprova tra poco.');
         } finally {
             input.disabled = false;
             sendButton.disabled = false;

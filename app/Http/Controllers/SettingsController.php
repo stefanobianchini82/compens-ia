@@ -27,6 +27,7 @@ class SettingsController extends Controller
         }
 
         return view('settings', [
+            'locale' => Setting::get('locale', config('app.locale')),
             'provider' => Setting::get('provider'),
             'apiKeySet' => filled(Setting::get('api_key')),
             'chatModel' => Setting::get('chat_model'),
@@ -47,6 +48,7 @@ class SettingsController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'locale' => ['required', Rule::in(['it', 'en'])],
             'provider' => ['required', Rule::in(['openai', 'gemini'])],
             'api_key' => ['nullable', 'string', 'max:500'],
             'chat_model' => ['nullable', 'string', 'max:120'],
@@ -56,6 +58,7 @@ class SettingsController extends Controller
             'tts_model' => ['nullable', 'string', 'max:120'],
         ]);
 
+        Setting::put('locale', $validated['locale']);
         Setting::put('provider', $validated['provider']);
 
         // Aggiorna la chiave solo se l'utente ne ha inserita una nuova: così può
@@ -76,6 +79,6 @@ class SettingsController extends Controller
 
         return redirect()
             ->route('settings.edit')
-            ->with('status', 'Impostazioni salvate.');
+            ->with('status', __('messages.settings_saved'));
     }
 }

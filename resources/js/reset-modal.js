@@ -8,6 +8,8 @@
  * sull'overlay → invoca `onCancel`. Conferma → invoca `onConfirm`.
  */
 
+import { t } from './i18n';
+
 const csrfToken = () =>
     document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 
@@ -43,7 +45,7 @@ const dismiss = () => {
 };
 
 /** Apre il modale con testo e callback dati. */
-export function openConfirm({ title, message, confirmLabel = 'Conferma', onConfirm, onCancel } = {}) {
+export function openConfirm({ title, message, confirmLabel = t('confirm', 'Conferma'), onConfirm, onCancel } = {}) {
     const { modal, title: titleEl, message: messageEl, confirm: confirmBtn, cancel: cancelBtn } = refs();
     if (!modal) {
         return;
@@ -102,9 +104,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Pulsante "🗑️ Svuota chat": svuota e ricarica la dashboard.
     document.getElementById('chat-reset-btn')?.addEventListener('click', () => {
         openConfirm({
-            title: 'Vuoi svuotare la chat?',
-            message: 'I messaggi verranno eliminati definitivamente.',
-            confirmLabel: 'Svuota',
+            title: t('clear_title', 'Vuoi svuotare la chat?'),
+            message: t('clear_body', 'I messaggi verranno eliminati definitivamente.'),
+            confirmLabel: t('clear_confirm', 'Svuota'),
             onConfirm: async () => {
                 await postReset();
                 window.location.reload();

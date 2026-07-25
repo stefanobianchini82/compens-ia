@@ -40,7 +40,7 @@ class TextToSpeechFactory
     public function make(): OpenAITextToSpeech
     {
         if (! $this->available()) {
-            throw new RuntimeException('Text-to-Speech OpenAI non disponibile con le impostazioni correnti.');
+            throw new RuntimeException(__('messages.tts_provider_missing'));
         }
 
         return new OpenAITextToSpeech(
