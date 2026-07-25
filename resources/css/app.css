@@ -142,14 +142,16 @@
         color: var(--color-slate-600, #475569);
     }
 
-    /* Pannello della mappa concettuale (Mermaid). Sfondo chiaro, scorrevole in
-       orizzontale se la mappa è larga, così non rompe mai il layout della bolla. */
+    /* Pannello della mappa concettuale (Mermaid). Sfondo bianco per il massimo
+       contrasto con la mappa monocromatica (coerente con lo sfondo del PNG),
+       scorrevole in orizzontale se la mappa è larga, così non rompe mai il
+       layout della bolla. */
     .mindmap-panel {
         overflow-x: auto;
         max-width: 100%;
         border: 2px solid var(--color-slate-200, #e2e8f0);
         border-radius: 1rem;
-        background: var(--color-slate-50, #f8fafc);
+        background: #ffffff;
         padding: 0.75rem;
     }
 

@@ -17,6 +17,60 @@ let mermaidPromise = null;
 let renderSeq = 0;
 
 /**
+ * Stile monocromatico ad alto contrasto per la mappa (accessibilità DSA).
+ *
+ * Viene iniettato COME <style> DENTRO l'SVG (non in app.css): così vale sia a
+ * schermo sia in stampa/PNG, dato che l'export clona e serializza l'SVG. Toglie
+ * i colori di sezione di Mermaid — la gerarchia si legge dalle forme (radice a
+ * cerchio, rami a esagono, sotto-rami a rettangolo, assegnate lato server).
+ * `!important` per vincere sullo <style> interno del tema Mermaid.
+ */
+const MONO_SVG_CSS = `
+.mindmap-node rect,
+.mindmap-node circle,
+.mindmap-node ellipse,
+.mindmap-node polygon,
+.mindmap-node path {
+    fill: #ffffff !important;
+    stroke: #1f2937 !important;
+    stroke-width: 2px !important;
+}
+.mindmap-node .text,
+.mindmap-node text,
+.mindmap-node tspan,
+.mindmap-node span,
+.mindmap-node p,
+.mindmap-node .nodeLabel,
+.mindmap-node .mindmap-node-label,
+.mindmap-node foreignObject div {
+    fill: #0f172a !important;
+    color: #0f172a !important;
+}
+.edge,
+.mindmap-edge,
+path.edge {
+    stroke: #64748b !important;
+    fill: none !important;
+}
+`;
+
+/**
+ * Inietta lo stile monocromatico dentro l'SVG reso, così accompagna anche il
+ * clone usato per stampa/PNG.
+ *
+ * @param {HTMLElement} panel  Contenitore con l'SVG appena inserito.
+ */
+const applyMonochrome = (panel) => {
+    const svg = panel?.querySelector('svg');
+    if (!svg) {
+        return;
+    }
+    const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    style.textContent = MONO_SVG_CSS;
+    svg.appendChild(style); // ultimo figlio: vince nella cascata
+};
+
+/**
  * Estrae l'SVG della mappa da un panel, con dimensioni intrinseche esplicite.
  *
  * Mermaid imposta la larghezza via `max-width` in stile e lascia spesso width in
@@ -295,6 +349,7 @@ export const createMindMapButton = (bubble, { url, csrf, messageId }) => {
             panel.setAttribute('role', 'img');
             panel.setAttribute('aria-label', t('mindmap_aria', 'Mappa concettuale della risposta'));
             panel.innerHTML = svg;
+            applyMonochrome(panel); // toglie i colori: forme al posto del colore
             panel.appendChild(buildActions(panel));
             bubble.appendChild(panel);
 
